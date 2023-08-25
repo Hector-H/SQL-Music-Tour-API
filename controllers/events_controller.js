@@ -29,6 +29,9 @@ events.get('/:name', async (req, res) => {
     const { event: eventName = '' } = req.query;
     try {
         const foundEvent = await Event.findOne({
+            attributes: {
+                exclude: 'event_id'
+            },
             where: {
                 name: {
                     [Op.iLike] : `%${eventName}%`
@@ -38,7 +41,13 @@ events.get('/:name', async (req, res) => {
                 {
                     model: MeetGreet,
                     as: 'meetAndGreets',
+                    attributes: {
+                        exclude: ['meet_greet_id', 'event_id', 'band_id']
+                    },
                     include: {
+                        attributes: {
+                            exclude: 'band_id'
+                        },
                         model: Band,
                         as: 'band'
                     }
@@ -46,20 +55,40 @@ events.get('/:name', async (req, res) => {
                 {
                     model: SetTime,
                     as: 'setTimes',
+                    attributes: {
+                        exclude: ['set_time_id', 'event_id', 'band_id', 'stage_id']
+                    },
                     include: [
                         {
                             model: Band,
-                            as: 'band'
+                            as: 'band',
+                            attributes: {
+                                exclude: 'band_id'
+                            },
                         },
                         {
-                            
+                            model: Stage,
+                            as: 'stage',
+                            attributes: {
+                                exclude: 'stage_id'
+                            },
                         }
                     ]
                 },
                 {
                     model: Stage,
-                    as: 'stages'
+                    as: 'stages',
+                    attributes: {
+                        exclude: 'stage_id'
+                    },
+                    through: {
+                        attributes: []
+                    }
                 }
+            ],
+            order: [
+                [{ model: MeetGreet, as: 'meetAndGreets'}, 'meet_start_time', 'ASC'],
+                [{ model: SetTime, as: 'setTimes'}, 'start_time', 'ASC']
             ]
         });
         res.status(200).json(foundEvent);
